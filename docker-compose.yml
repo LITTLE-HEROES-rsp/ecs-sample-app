@@ -1,0 +1,48 @@
+version: "3.9"
+
+volumes:
+    # タスクで共有するボリュームはここに定義
+    php-fpm-socket:
+    psysh-store:
+networks:
+  appnetwork:
+    driver: bridge
+services:
+  app:
+    container_name: app
+    platform: linux/x86_64
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    volumes:
+      - type: volume
+        source: php-fpm-socket
+        target: /var/run/php-fpm
+        volume:
+          nocopy: true
+      - type: volume
+        source: psysh-store
+        target: /root/.config/psysh
+        volume:
+          nocopy: true
+    networks:
+      - appnetwork
+  web:
+    container_name: web
+    platform: linux/x86_64
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+    ports:
+      - target: 80
+        protocol: tcp
+        mode: host
+        published: 80
+    volumes:
+      - type: volume
+        source: php-fpm-socket
+        target: /var/run/php-fpm
+        volume:
+          nocopy: true
+    networks:
+      - appnetwork
